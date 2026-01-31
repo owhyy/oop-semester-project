@@ -11,6 +11,12 @@ extern "C" {
  */
 const char* audiolib_version(void);
 
+/**
+ * Attempts to load an audio file from the given path.
+ * Returns 0 on success, non-zero on failure.
+ */
+int load_audio(const char* path);
+
 #ifdef __cplusplus
 }
 #endif

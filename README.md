@@ -39,7 +39,7 @@ java -Djava.library.path=./cpp/build -jar target/song-editor-1.0-SNAPSHOT.jar
 Or with Maven:
 
 ```bash
-mvn exec:java -Dexec.mainClass="app.App" -Dexec.args="" -Djava.library.path=./cpp/build
+mvn compile exec:java
 ```
 
 Or compile and run manually:
