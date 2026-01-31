@@ -3,10 +3,14 @@ package app;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class App {
     private static final String NATIVE_LIB_ERROR = "Native lib not loaded – build cpp/ first";
+    private static final String UPLOAD_LABEL = "Upload Song";
+    private static final String PLAY_LABEL = "Play";
+    private static final String PAUSE_LABEL = "Pause";
+    private static final String RESUME_LABEL = "Resume";
+    private static final String STOP_LABEL = "Stop";
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
@@ -16,30 +20,30 @@ public class App {
             frame.setLocationRelativeTo(null);
 
             final String baseStatus = "Song Editor";
-
             JTextArea statusArea = createStatusArea(baseStatus);
 
-            final File[] selectedFile = {null};
+            JButton playButton = new JButton(PLAY_LABEL);
+            playButton.setVisible(false);
 
-            JButton uploadButton = new JButton("Upload Song");
-            uploadButton.addActionListener(event ->
-                    handleUpload(frame, statusArea, baseStatus, selectedFile)
-            );
+            JButton pauseButton = new JButton(PAUSE_LABEL);
+            pauseButton.setVisible(false);
 
-            JButton playButton = new JButton("Play");
+            JButton stopButton = new JButton(STOP_LABEL);
+            stopButton.setVisible(false);
+
+            Player playerState = new Player(baseStatus, statusArea, playButton, pauseButton, stopButton);
             playButton.addActionListener(event ->
-                    handlePlay(statusArea, baseStatus, selectedFile)
+                    handlePlay(playerState)
             );
-
-            AtomicBoolean isPaused = new AtomicBoolean(false);
-            JButton pauseButton = new JButton("Pause");
             pauseButton.addActionListener(event ->
-                    handlePauseToggle(statusArea, baseStatus, isPaused, pauseButton)
+                    handlePauseToggle(playerState)
             );
-
-            JButton stopButton = new JButton("Stop");
             stopButton.addActionListener(event ->
-                    handleStop(statusArea, baseStatus)
+                    handleStop(playerState)
+            );
+            JButton uploadButton = new JButton(UPLOAD_LABEL);
+            uploadButton.addActionListener(event ->
+                    handleUpload(frame, playerState)
             );
 
             JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -64,12 +68,7 @@ public class App {
         return statusArea;
     }
 
-    private static void handleUpload(
-            JFrame frame,
-            JTextArea statusArea,
-            String baseStatus,
-            File[] selectedFile
-    ) {
+    private static void handleUpload(JFrame frame, Player state) {
         JFileChooser chooser = new JFileChooser();
         chooser.setAcceptAllFileFilterUsed(false);
         chooser.addChoosableFileFilter(
@@ -84,74 +83,77 @@ public class App {
         }
 
         File selected = chooser.getSelectedFile();
-        selectedFile[0] = selected;
+        state.selectedFile = selected;
         String path = selected.getAbsolutePath();
         try {
             int code = AudioLib.INSTANCE.load_audio(path);
             if (code == 0) {
-                statusArea.setText(baseStatus + "\nLoaded: " + selected.getName());
+                state.statusArea.setText(state.baseStatus + "\nLoaded: " + selected.getName());
+                state.playButton.setVisible(true);
+                state.pauseButton.setVisible(true);
+                state.stopButton.setVisible(true);
+                state.isPaused = false;
+                state.pauseButton.setText(PAUSE_LABEL);
             } else {
-                statusArea.setText(baseStatus + "\nFailed to load: " + path + " (code " + code + ")");
+                state.statusArea.setText(state.baseStatus + "\nFailed to load: " + path + " (code " + code + ")");
+                state.playButton.setVisible(false);
+                state.pauseButton.setVisible(false);
+                state.stopButton.setVisible(false);
             }
         } catch (UnsatisfiedLinkError e) {
-            statusArea.setText(baseStatus + "\n" + NATIVE_LIB_ERROR);
+            state.statusArea.setText(state.baseStatus + "\n" + NATIVE_LIB_ERROR);
         }
     }
 
-    private static void handlePlay(JTextArea statusArea, String baseStatus, File[] selectedFile) {
-        if (selectedFile[0] == null) {
-            statusArea.setText(baseStatus + "\nNo file selected.");
+    private static void handlePlay(Player state) {
+        if (state.selectedFile == null) {
+            state.statusArea.setText(state.baseStatus + "\nNo file selected.");
             return;
         }
         try {
-            int code = AudioLib.INSTANCE.play_audio(selectedFile[0].getAbsolutePath());
+            int code = AudioLib.INSTANCE.play_audio(state.selectedFile.getAbsolutePath());
             if (code == 0) {
-                statusArea.setText(baseStatus + "\nPlaying: " + selectedFile[0].getName());
+                state.statusArea.setText(state.baseStatus + "\nPlaying: " + state.selectedFile.getName());
             } else {
-                statusArea.setText(baseStatus + "\nFailed to play file (code " + code + ").");
+                state.statusArea.setText(state.baseStatus + "\nFailed to play file (code " + code + ").");
             }
         } catch (UnsatisfiedLinkError e) {
-            statusArea.setText(baseStatus + "\n" + NATIVE_LIB_ERROR);
+            state.statusArea.setText(state.baseStatus + "\n" + NATIVE_LIB_ERROR);
         }
     }
 
-    private static void handleStop(JTextArea statusArea, String baseStatus) {
+    private static void handleStop(Player state) {
         try {
             AudioLib.INSTANCE.stop_audio();
-            statusArea.setText(baseStatus + "\nStopped.");
+            state.statusArea.setText(state.baseStatus + "\nStopped.");
         } catch (UnsatisfiedLinkError e) {
-            statusArea.setText(baseStatus + "\n" + NATIVE_LIB_ERROR);
+            state.statusArea.setText(state.baseStatus + "\n" + NATIVE_LIB_ERROR);
         }
     }
 
-    private static void handlePauseToggle(
-            JTextArea statusArea,
-            String baseStatus,
-            AtomicBoolean isPaused,
-            JButton pauseButton
-    ) {
+    private static void handlePauseToggle(Player state) {
         try {
-            if (!isPaused.get()) {
+            if (!state.isPaused) {
                 int code = AudioLib.INSTANCE.pause_audio();
                 if (code == 0) {
-                    isPaused.set(true);
-                    pauseButton.setText("Resume");
-                    statusArea.setText(baseStatus + "\nPaused.");
+                    state.isPaused = true;
+                    state.pauseButton.setText(RESUME_LABEL);
+                    state.statusArea.setText(state.baseStatus + "\nPaused.");
                 } else {
-                    statusArea.setText(baseStatus + "\nNothing to pause.");
+                    state.statusArea.setText(state.baseStatus + "\nNothing to pause.");
                 }
             } else {
                 int code = AudioLib.INSTANCE.resume_audio();
                 if (code == 0) {
-                    isPaused.set(false);
-                    pauseButton.setText("Pause");
-                    statusArea.setText(baseStatus + "\nResumed.");
+                    state.isPaused = false;
+                    state.pauseButton.setText(PAUSE_LABEL);
+                    state.statusArea.setText(state.baseStatus + "\nResumed.");
                 } else {
-                    statusArea.setText(baseStatus + "\nNothing to resume.");
+                    state.statusArea.setText(state.baseStatus + "\nNothing to resume.");
                 }
             }
         } catch (UnsatisfiedLinkError e) {
-            statusArea.setText(baseStatus + "\n" + NATIVE_LIB_ERROR);
+            state.statusArea.setText(state.baseStatus + "\n" + NATIVE_LIB_ERROR);
         }
     }
 }
