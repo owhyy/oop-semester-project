@@ -1,0 +1,16 @@
+# Maven
+target/
+pom.xml.tag
+*.jar
+*.war
+
+# C++ build
+cpp/build/
+*.o
+*.so
+*.a
+
+# IDE
+.idea/
+*.iml
+.vscode/
