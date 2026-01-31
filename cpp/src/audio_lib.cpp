@@ -9,6 +9,11 @@ namespace {
     bool g_sound_init = false;
     bool g_paused = false;
     float g_speed = 1.0f;
+    float g_bass_db = 0.0f;
+    bool g_bass_init = false;
+    ma_uint32 g_bass_channels = 0;
+    ma_uint32 g_bass_sample_rate = 0;
+    ma_loshelf_node g_bass_node;
     std::mutex g_audio_mutex;
 
     int ensure_engine() {
@@ -30,6 +35,42 @@ namespace {
             g_sound_init = false;
             g_paused = false;
         }
+    }
+
+    int ensure_bass_node(ma_uint32 channels, ma_uint32 sampleRate) {
+        if (g_bass_init && g_bass_channels == channels && g_bass_sample_rate == sampleRate) {
+            return 0;
+        }
+        if (g_bass_init) {
+            ma_loshelf_node_uninit(&g_bass_node, NULL);
+            g_bass_init = false;
+        }
+        ma_loshelf_node_config config = ma_loshelf_node_config_init(
+                channels,
+                sampleRate,
+                g_bass_db,
+                0.707,
+                200.0
+        );
+        ma_result result = ma_loshelf_node_init(
+                ma_engine_get_node_graph(&g_engine),
+                &config,
+                NULL,
+                &g_bass_node
+        );
+        if (result != MA_SUCCESS) {
+            return 20;
+        }
+        ma_node_attach_output_bus(
+                (ma_node*)&g_bass_node,
+                0,
+                ma_node_graph_get_endpoint(ma_engine_get_node_graph(&g_engine)),
+                0
+        );
+        g_bass_init = true;
+        g_bass_channels = channels;
+        g_bass_sample_rate = sampleRate;
+        return 0;
     }
 }
 
@@ -72,6 +113,16 @@ int play_audio(const char* path) {
     g_sound_init = true;
     g_paused = false;
     ma_sound_set_pitch(&g_sound, g_speed);
+
+    ma_format format;
+    ma_uint32 channels;
+    ma_uint32 sample_rate;
+    result = ma_sound_get_data_format(&g_sound, &format, &channels, &sample_rate, NULL, 0);
+    if (result == MA_SUCCESS) {
+        if (ensure_bass_node(channels, sample_rate) == 0) {
+            ma_node_attach_output_bus((ma_node*)&g_sound, 0, (ma_node*)&g_bass_node, 0);
+        }
+    }
 
     result = ma_sound_start(&g_sound);
     if (result != MA_SUCCESS) {
@@ -211,6 +262,29 @@ void set_speed(float speed) {
         return;
     }
     ma_sound_set_pitch(&g_sound, speed);
+}
+
+void set_bass_db(float db) {
+    if (db < -12.0f) {
+        db = -12.0f;
+    }
+    if (db > 12.0f) {
+        db = 12.0f;
+    }
+    std::lock_guard<std::mutex> lock(g_audio_mutex);
+    g_bass_db = db;
+    if (!g_bass_init || g_bass_channels == 0 || g_bass_sample_rate == 0) {
+        return;
+    }
+    ma_loshelf_config config = ma_loshelf2_config_init(
+            ma_format_f32,
+            g_bass_channels,
+            g_bass_sample_rate,
+            g_bass_db,
+            0.707,
+            200.0
+    );
+    ma_loshelf_node_reinit(&config, &g_bass_node);
 }
 
 }

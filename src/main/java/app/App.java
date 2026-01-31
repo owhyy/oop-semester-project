@@ -52,6 +52,13 @@ public class App {
             speedSlider.setVisible(true);
             speedPercent.setVisible(true);
 
+            JLabel bassLabel = new JLabel("Bass");
+            JLabel bassDb = new JLabel("0 dB");
+            JSlider bassSlider = new JSlider(-12, 12, 0);
+            bassSlider.setEnabled(true);
+            bassSlider.setVisible(true);
+            bassDb.setVisible(true);
+
             Player.Controls controls = new Player.Controls();
             controls.playButton = playButton;
             controls.pauseButton = pauseButton;
@@ -62,6 +69,8 @@ public class App {
             controls.volumePercent = volumePercent;
             controls.speedSlider = speedSlider;
             controls.speedPercent = speedPercent;
+            controls.bassSlider = bassSlider;
+            controls.bassDb = bassDb;
             Player playerState = new Player(baseStatus, statusArea, controls);
             playButton.addActionListener(event ->
                     runNativeSafe(playerState, () -> handlePlay(playerState))
@@ -77,36 +86,10 @@ public class App {
                     runNativeSafe(playerState, () -> handleUpload(frame, playerState))
             );
 
-            seekSlider.addChangeListener(event -> {
-                if (playerState.isUpdatingSeek || seekSlider.getValueIsAdjusting() || playerState.durationSeconds <= 0) {
-                    return;
-                }
-                double targetSeconds = seekSlider.getValue();
-                runNativeSafe(playerState, () -> {
-                    int code = AudioLib.INSTANCE.seek_seconds(targetSeconds);
-                    if (code == 0) {
-                        updateTimeLabel(timeLabel, targetSeconds, playerState.durationSeconds);
-                    }
-                });
-            });
-
-            volumeSlider.addChangeListener(event -> {
-                if (!volumeSlider.isEnabled()) {
-                    return;
-                }
-                float volume = volumeSlider.getValue() / 100.0f;
-                volumePercent.setText(volumeSlider.getValue() + "%");
-                runNativeSafe(playerState, () -> AudioLib.INSTANCE.set_volume(volume));
-            });
-
-            speedSlider.addChangeListener(event -> {
-                if (!speedSlider.isEnabled()) {
-                    return;
-                }
-                float speed = speedSlider.getValue() / 100.0f;
-                speedPercent.setText(speedSlider.getValue() + "%");
-                runNativeSafe(playerState, () -> AudioLib.INSTANCE.set_speed(speed));
-            });
+            configureSeekSlider(playerState, seekSlider, timeLabel);
+            configureVolumeSlider(playerState, volumeSlider, volumePercent);
+            configureSpeedSlider(playerState, speedSlider, speedPercent);
+            configureBassSlider(playerState, bassSlider, bassDb);
 
             Timer seekTimer = new Timer(SEEK_TIMER_MS, event ->
                     runNativeSafe(playerState, () -> updateSeekBar(playerState, seekSlider, timeLabel))
@@ -133,12 +116,18 @@ public class App {
             speedRow.add(speedSlider);
             speedRow.add(speedPercent);
 
+            JPanel bassRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            bassRow.add(bassLabel);
+            bassRow.add(bassSlider);
+            bassRow.add(bassDb);
+
             JPanel top = new JPanel();
             top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
             top.add(controlsRow);
             top.add(seekRow);
             top.add(volumeRow);
             top.add(speedRow);
+            top.add(bassRow);
 
             frame.setLayout(new BorderLayout());
             frame.add(top, BorderLayout.NORTH);
@@ -184,9 +173,12 @@ public class App {
         state.volumePercent.setVisible(true);
         state.speedSlider.setVisible(true);
         state.speedPercent.setVisible(true);
+        state.bassSlider.setVisible(true);
+        state.bassDb.setVisible(true);
         state.seekSlider.setEnabled(false);
         state.volumeSlider.setEnabled(true);
         state.speedSlider.setEnabled(true);
+        state.bassSlider.setEnabled(true);
         state.isUpdatingSeek = true;
         state.seekSlider.setValue(0);
         state.isUpdatingSeek = false;
@@ -209,6 +201,9 @@ public class App {
             state.speedSlider.setVisible(true);
             state.speedPercent.setVisible(true);
             state.speedSlider.setEnabled(true);
+            state.bassSlider.setVisible(true);
+            state.bassDb.setVisible(true);
+            state.bassSlider.setEnabled(true);
             updateTimeLabel(state.timeLabel, 0, state.durationSeconds);
             state.isPaused = false;
             state.pauseButton.setText(PAUSE_LABEL);
@@ -225,6 +220,9 @@ public class App {
             state.speedSlider.setVisible(true);
             state.speedPercent.setVisible(true);
             state.speedSlider.setEnabled(true);
+            state.bassSlider.setVisible(true);
+            state.bassDb.setVisible(true);
+            state.bassSlider.setEnabled(true);
         }
     }
 
@@ -305,6 +303,54 @@ public class App {
 
     private static void updateTimeLabel(JLabel timeLabel, double position, double duration) {
         timeLabel.setText(formatTime(position) + " / " + formatTime(duration));
+    }
+
+    private static void configureSeekSlider(Player state, JSlider seekSlider, JLabel timeLabel) {
+        seekSlider.addChangeListener(event -> {
+            if (state.isUpdatingSeek || seekSlider.getValueIsAdjusting() || state.durationSeconds <= 0) {
+                return;
+            }
+            double targetSeconds = seekSlider.getValue();
+            runNativeSafe(state, () -> {
+                int code = AudioLib.INSTANCE.seek_seconds(targetSeconds);
+                if (code == 0) {
+                    updateTimeLabel(timeLabel, targetSeconds, state.durationSeconds);
+                }
+            });
+        });
+    }
+
+    private static void configureVolumeSlider(Player state, JSlider volumeSlider, JLabel volumePercent) {
+        volumeSlider.addChangeListener(event -> {
+            if (!volumeSlider.isEnabled()) {
+                return;
+            }
+            float volume = volumeSlider.getValue() / 100.0f;
+            volumePercent.setText(volumeSlider.getValue() + "%");
+            runNativeSafe(state, () -> AudioLib.INSTANCE.set_volume(volume));
+        });
+    }
+
+    private static void configureSpeedSlider(Player state, JSlider speedSlider, JLabel speedPercent) {
+        speedSlider.addChangeListener(event -> {
+            if (!speedSlider.isEnabled()) {
+                return;
+            }
+            float speed = speedSlider.getValue() / 100.0f;
+            speedPercent.setText(speedSlider.getValue() + "%");
+            runNativeSafe(state, () -> AudioLib.INSTANCE.set_speed(speed));
+        });
+    }
+
+    private static void configureBassSlider(Player state, JSlider bassSlider, JLabel bassDb) {
+        bassSlider.addChangeListener(event -> {
+            if (!bassSlider.isEnabled()) {
+                return;
+            }
+            int value = bassSlider.getValue();
+            bassDb.setText(value + " dB");
+            runNativeSafe(state, () -> AudioLib.INSTANCE.set_bass_db(value));
+        });
     }
 
     private static String formatTime(double seconds) {

@@ -16,4 +16,5 @@ public interface AudioLib extends Library {
     int seek_seconds(double seconds);
     void set_volume(float volume);
     void set_speed(float speed);
+    void set_bass_db(float db);
 }

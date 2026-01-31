@@ -68,6 +68,11 @@ void set_volume(float volume);
  */
 void set_speed(float speed);
 
+/**
+ * Sets bass gain in dB (-12.0 to +12.0).
+ */
+void set_bass_db(float db);
+
 #ifdef __cplusplus
 }
 #endif

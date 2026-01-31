@@ -17,6 +17,8 @@ final class Player {
         JLabel volumePercent;
         JSlider speedSlider;
         JLabel speedPercent;
+        JSlider bassSlider;
+        JLabel bassDb;
     }
 
     final String baseStatus;
@@ -32,6 +34,8 @@ final class Player {
     final JLabel volumePercent;
     final JSlider speedSlider;
     final JLabel speedPercent;
+    final JSlider bassSlider;
+    final JLabel bassDb;
     boolean isPaused;
     boolean isUpdatingSeek;
 
@@ -51,6 +55,8 @@ final class Player {
         this.volumePercent = controls.volumePercent;
         this.speedSlider = controls.speedSlider;
         this.speedPercent = controls.speedPercent;
+        this.bassSlider = controls.bassSlider;
+        this.bassDb = controls.bassDb;
         this.isPaused = false;
     }
 }
