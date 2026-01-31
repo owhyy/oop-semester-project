@@ -117,6 +117,21 @@ public class App {
         }
 
         File selected = chooser.getSelectedFile();
+        AudioLib.INSTANCE.stop_audio();
+        state.isPaused = false;
+        state.durationSeconds = 0;
+        state.pauseButton.setText(PAUSE_LABEL);
+        state.playButton.setVisible(false);
+        state.pauseButton.setVisible(false);
+        state.stopButton.setVisible(false);
+        state.seekSlider.setVisible(false);
+        state.timeLabel.setVisible(false);
+        state.seekSlider.setEnabled(false);
+        state.isUpdatingSeek = true;
+        state.seekSlider.setValue(0);
+        state.isUpdatingSeek = false;
+        updateTimeLabel(state.timeLabel, 0, 0);
+
         state.selectedFile = selected;
         String path = selected.getAbsolutePath();
         int code = AudioLib.INSTANCE.load_audio(path);
@@ -128,6 +143,7 @@ public class App {
             state.stopButton.setVisible(true);
             state.seekSlider.setVisible(true);
             state.timeLabel.setVisible(true);
+            updateTimeLabel(state.timeLabel, 0, state.durationSeconds);
             state.isPaused = false;
             state.pauseButton.setText(PAUSE_LABEL);
         } else {
