@@ -33,17 +33,17 @@ public class App {
 
             Player playerState = new Player(baseStatus, statusArea, playButton, pauseButton, stopButton);
             playButton.addActionListener(event ->
-                    handlePlay(playerState)
+                    runNativeSafe(playerState, () -> handlePlay(playerState))
             );
             pauseButton.addActionListener(event ->
-                    handlePauseToggle(playerState)
+                    runNativeSafe(playerState, () -> handlePauseToggle(playerState))
             );
             stopButton.addActionListener(event ->
-                    handleStop(playerState)
+                    runNativeSafe(playerState, () -> handleStop(playerState))
             );
             JButton uploadButton = new JButton(UPLOAD_LABEL);
             uploadButton.addActionListener(event ->
-                    handleUpload(frame, playerState)
+                    runNativeSafe(playerState, () -> handleUpload(frame, playerState))
             );
 
             JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -85,23 +85,19 @@ public class App {
         File selected = chooser.getSelectedFile();
         state.selectedFile = selected;
         String path = selected.getAbsolutePath();
-        try {
-            int code = AudioLib.INSTANCE.load_audio(path);
-            if (code == 0) {
-                state.statusArea.setText(state.baseStatus + "\nLoaded: " + selected.getName());
-                state.playButton.setVisible(true);
-                state.pauseButton.setVisible(true);
-                state.stopButton.setVisible(true);
-                state.isPaused = false;
-                state.pauseButton.setText(PAUSE_LABEL);
-            } else {
-                state.statusArea.setText(state.baseStatus + "\nFailed to load: " + path + " (code " + code + ")");
-                state.playButton.setVisible(false);
-                state.pauseButton.setVisible(false);
-                state.stopButton.setVisible(false);
-            }
-        } catch (UnsatisfiedLinkError e) {
-            state.statusArea.setText(state.baseStatus + "\n" + NATIVE_LIB_ERROR);
+        int code = AudioLib.INSTANCE.load_audio(path);
+        if (code == 0) {
+            state.statusArea.setText(state.baseStatus + "\nLoaded: " + selected.getName());
+            state.playButton.setVisible(true);
+            state.pauseButton.setVisible(true);
+            state.stopButton.setVisible(true);
+            state.isPaused = false;
+            state.pauseButton.setText(PAUSE_LABEL);
+        } else {
+            state.statusArea.setText(state.baseStatus + "\nFailed to load: " + path + " (code " + code + ")");
+            state.playButton.setVisible(false);
+            state.pauseButton.setVisible(false);
+            state.stopButton.setVisible(false);
         }
     }
 
@@ -110,48 +106,44 @@ public class App {
             state.statusArea.setText(state.baseStatus + "\nNo file selected.");
             return;
         }
-        try {
-            int code = AudioLib.INSTANCE.play_audio(state.selectedFile.getAbsolutePath());
-            if (code == 0) {
-                state.statusArea.setText(state.baseStatus + "\nPlaying: " + state.selectedFile.getName());
-            } else {
-                state.statusArea.setText(state.baseStatus + "\nFailed to play file (code " + code + ").");
-            }
-        } catch (UnsatisfiedLinkError e) {
-            state.statusArea.setText(state.baseStatus + "\n" + NATIVE_LIB_ERROR);
+        int code = AudioLib.INSTANCE.play_audio(state.selectedFile.getAbsolutePath());
+        if (code == 0) {
+            state.statusArea.setText(state.baseStatus + "\nPlaying: " + state.selectedFile.getName());
+        } else {
+            state.statusArea.setText(state.baseStatus + "\nFailed to play file (code " + code + ").");
         }
     }
 
     private static void handleStop(Player state) {
-        try {
-            AudioLib.INSTANCE.stop_audio();
-            state.statusArea.setText(state.baseStatus + "\nStopped.");
-        } catch (UnsatisfiedLinkError e) {
-            state.statusArea.setText(state.baseStatus + "\n" + NATIVE_LIB_ERROR);
-        }
+        AudioLib.INSTANCE.stop_audio();
+        state.statusArea.setText(state.baseStatus + "\nStopped.");
     }
 
     private static void handlePauseToggle(Player state) {
-        try {
-            if (!state.isPaused) {
-                int code = AudioLib.INSTANCE.pause_audio();
-                if (code == 0) {
-                    state.isPaused = true;
-                    state.pauseButton.setText(RESUME_LABEL);
-                    state.statusArea.setText(state.baseStatus + "\nPaused.");
-                } else {
-                    state.statusArea.setText(state.baseStatus + "\nNothing to pause.");
-                }
+        if (!state.isPaused) {
+            int code = AudioLib.INSTANCE.pause_audio();
+            if (code == 0) {
+                state.isPaused = true;
+                state.pauseButton.setText(RESUME_LABEL);
+                state.statusArea.setText(state.baseStatus + "\nPaused.");
             } else {
-                int code = AudioLib.INSTANCE.resume_audio();
-                if (code == 0) {
-                    state.isPaused = false;
-                    state.pauseButton.setText(PAUSE_LABEL);
-                    state.statusArea.setText(state.baseStatus + "\nResumed.");
-                } else {
-                    state.statusArea.setText(state.baseStatus + "\nNothing to resume.");
-                }
+                state.statusArea.setText(state.baseStatus + "\nNothing to pause.");
             }
+        } else {
+            int code = AudioLib.INSTANCE.resume_audio();
+            if (code == 0) {
+                state.isPaused = false;
+                state.pauseButton.setText(PAUSE_LABEL);
+                state.statusArea.setText(state.baseStatus + "\nResumed.");
+            } else {
+                state.statusArea.setText(state.baseStatus + "\nNothing to resume.");
+            }
+        }
+    }
+
+    private static void runNativeSafe(Player state, Runnable action) {
+        try {
+            action.run();
         } catch (UnsatisfiedLinkError e) {
             state.statusArea.setText(state.baseStatus + "\n" + NATIVE_LIB_ERROR);
         }
