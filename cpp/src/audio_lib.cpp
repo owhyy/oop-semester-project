@@ -8,6 +8,7 @@ namespace {
     ma_sound g_sound;
     bool g_sound_init = false;
     bool g_paused = false;
+    float g_speed = 1.0f;
     std::mutex g_audio_mutex;
 
     int ensure_engine() {
@@ -70,6 +71,7 @@ int play_audio(const char* path) {
     }
     g_sound_init = true;
     g_paused = false;
+    ma_sound_set_pitch(&g_sound, g_speed);
 
     result = ma_sound_start(&g_sound);
     if (result != MA_SUCCESS) {
@@ -194,6 +196,21 @@ void set_volume(float volume) {
         return;
     }
     ma_sound_set_volume(&g_sound, volume);
+}
+
+void set_speed(float speed) {
+    if (speed < 0.5f) {
+        speed = 0.5f;
+    }
+    if (speed > 2.0f) {
+        speed = 2.0f;
+    }
+    std::lock_guard<std::mutex> lock(g_audio_mutex);
+    g_speed = speed;
+    if (!g_sound_init) {
+        return;
+    }
+    ma_sound_set_pitch(&g_sound, speed);
 }
 
 }

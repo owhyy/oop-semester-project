@@ -63,6 +63,11 @@ int seek_seconds(double seconds);
  */
 void set_volume(float volume);
 
+/**
+ * Sets playback speed (0.5 - 2.0).
+ */
+void set_speed(float speed);
+
 #ifdef __cplusplus
 }
 #endif

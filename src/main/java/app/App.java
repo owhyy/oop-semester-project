@@ -45,15 +45,23 @@ public class App {
             volumeSlider.setVisible(true);
             volumePercent.setVisible(true);
 
-            Player.Controls controls = new Player.Controls(
-                    playButton,
-                    pauseButton,
-                    stopButton,
-                    seekSlider,
-                    timeLabel,
-                    volumeSlider,
-                    volumePercent
-            );
+            JLabel speedLabel = new JLabel("Speed");
+            JLabel speedPercent = new JLabel("100%");
+            JSlider speedSlider = new JSlider(50, 200, 100);
+            speedSlider.setEnabled(true);
+            speedSlider.setVisible(true);
+            speedPercent.setVisible(true);
+
+            Player.Controls controls = new Player.Controls();
+            controls.playButton = playButton;
+            controls.pauseButton = pauseButton;
+            controls.stopButton = stopButton;
+            controls.seekSlider = seekSlider;
+            controls.timeLabel = timeLabel;
+            controls.volumeSlider = volumeSlider;
+            controls.volumePercent = volumePercent;
+            controls.speedSlider = speedSlider;
+            controls.speedPercent = speedPercent;
             Player playerState = new Player(baseStatus, statusArea, controls);
             playButton.addActionListener(event ->
                     runNativeSafe(playerState, () -> handlePlay(playerState))
@@ -91,6 +99,15 @@ public class App {
                 runNativeSafe(playerState, () -> AudioLib.INSTANCE.set_volume(volume));
             });
 
+            speedSlider.addChangeListener(event -> {
+                if (!speedSlider.isEnabled()) {
+                    return;
+                }
+                float speed = speedSlider.getValue() / 100.0f;
+                speedPercent.setText(speedSlider.getValue() + "%");
+                runNativeSafe(playerState, () -> AudioLib.INSTANCE.set_speed(speed));
+            });
+
             Timer seekTimer = new Timer(SEEK_TIMER_MS, event ->
                     runNativeSafe(playerState, () -> updateSeekBar(playerState, seekSlider, timeLabel))
             );
@@ -111,11 +128,17 @@ public class App {
             volumeRow.add(volumeSlider);
             volumeRow.add(volumePercent);
 
+            JPanel speedRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            speedRow.add(speedLabel);
+            speedRow.add(speedSlider);
+            speedRow.add(speedPercent);
+
             JPanel top = new JPanel();
             top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
             top.add(controlsRow);
             top.add(seekRow);
             top.add(volumeRow);
+            top.add(speedRow);
 
             frame.setLayout(new BorderLayout());
             frame.add(top, BorderLayout.NORTH);
@@ -159,8 +182,11 @@ public class App {
         state.timeLabel.setVisible(false);
         state.volumeSlider.setVisible(true);
         state.volumePercent.setVisible(true);
+        state.speedSlider.setVisible(true);
+        state.speedPercent.setVisible(true);
         state.seekSlider.setEnabled(false);
         state.volumeSlider.setEnabled(true);
+        state.speedSlider.setEnabled(true);
         state.isUpdatingSeek = true;
         state.seekSlider.setValue(0);
         state.isUpdatingSeek = false;
@@ -180,6 +206,9 @@ public class App {
             state.volumeSlider.setVisible(true);
             state.volumePercent.setVisible(true);
             state.volumeSlider.setEnabled(true);
+            state.speedSlider.setVisible(true);
+            state.speedPercent.setVisible(true);
+            state.speedSlider.setEnabled(true);
             updateTimeLabel(state.timeLabel, 0, state.durationSeconds);
             state.isPaused = false;
             state.pauseButton.setText(PAUSE_LABEL);
@@ -193,6 +222,9 @@ public class App {
             state.volumeSlider.setVisible(true);
             state.volumePercent.setVisible(true);
             state.volumeSlider.setEnabled(true);
+            state.speedSlider.setVisible(true);
+            state.speedPercent.setVisible(true);
+            state.speedSlider.setEnabled(true);
         }
     }
 

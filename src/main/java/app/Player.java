@@ -8,31 +8,15 @@ import java.io.File;
 
 final class Player {
     static final class Controls {
-        final JButton playButton;
-        final JButton pauseButton;
-        final JButton stopButton;
-        final JSlider seekSlider;
-        final JLabel timeLabel;
-        final JSlider volumeSlider;
-        final JLabel volumePercent;
-
-        Controls(
-                JButton playButton,
-                JButton pauseButton,
-                JButton stopButton,
-                JSlider seekSlider,
-                JLabel timeLabel,
-                JSlider volumeSlider,
-                JLabel volumePercent
-        ) {
-            this.playButton = playButton;
-            this.pauseButton = pauseButton;
-            this.stopButton = stopButton;
-            this.seekSlider = seekSlider;
-            this.timeLabel = timeLabel;
-            this.volumeSlider = volumeSlider;
-            this.volumePercent = volumePercent;
-        }
+        JButton playButton;
+        JButton pauseButton;
+        JButton stopButton;
+        JSlider seekSlider;
+        JLabel timeLabel;
+        JSlider volumeSlider;
+        JLabel volumePercent;
+        JSlider speedSlider;
+        JLabel speedPercent;
     }
 
     final String baseStatus;
@@ -46,6 +30,8 @@ final class Player {
     final JLabel timeLabel;
     final JSlider volumeSlider;
     final JLabel volumePercent;
+    final JSlider speedSlider;
+    final JLabel speedPercent;
     boolean isPaused;
     boolean isUpdatingSeek;
 
@@ -63,6 +49,8 @@ final class Player {
         this.timeLabel = controls.timeLabel;
         this.volumeSlider = controls.volumeSlider;
         this.volumePercent = controls.volumePercent;
+        this.speedSlider = controls.speedSlider;
+        this.speedPercent = controls.speedPercent;
         this.isPaused = false;
     }
 }

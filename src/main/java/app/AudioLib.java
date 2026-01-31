@@ -15,4 +15,5 @@ public interface AudioLib extends Library {
     double get_position_seconds();
     int seek_seconds(double seconds);
     void set_volume(float volume);
+    void set_speed(float speed);
 }
