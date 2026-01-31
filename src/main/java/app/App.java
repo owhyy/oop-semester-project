@@ -38,7 +38,23 @@ public class App {
             seekSlider.setEnabled(false);
             seekSlider.setVisible(false);
 
-            Player playerState = new Player(baseStatus, statusArea, playButton, pauseButton, stopButton, seekSlider, timeLabel);
+            JLabel volumeLabel = new JLabel("Vol");
+            JLabel volumePercent = new JLabel("50%");
+            JSlider volumeSlider = new JSlider(0, 100, 50);
+            volumeSlider.setEnabled(true);
+            volumeSlider.setVisible(true);
+            volumePercent.setVisible(true);
+
+            Player.Controls controls = new Player.Controls(
+                    playButton,
+                    pauseButton,
+                    stopButton,
+                    seekSlider,
+                    timeLabel,
+                    volumeSlider,
+                    volumePercent
+            );
+            Player playerState = new Player(baseStatus, statusArea, controls);
             playButton.addActionListener(event ->
                     runNativeSafe(playerState, () -> handlePlay(playerState))
             );
@@ -66,6 +82,15 @@ public class App {
                 });
             });
 
+            volumeSlider.addChangeListener(event -> {
+                if (!volumeSlider.isEnabled()) {
+                    return;
+                }
+                float volume = volumeSlider.getValue() / 100.0f;
+                volumePercent.setText(volumeSlider.getValue() + "%");
+                runNativeSafe(playerState, () -> AudioLib.INSTANCE.set_volume(volume));
+            });
+
             Timer seekTimer = new Timer(SEEK_TIMER_MS, event ->
                     runNativeSafe(playerState, () -> updateSeekBar(playerState, seekSlider, timeLabel))
             );
@@ -81,10 +106,16 @@ public class App {
             seekRow.add(seekSlider, BorderLayout.CENTER);
             seekRow.add(timeLabel, BorderLayout.EAST);
 
+            JPanel volumeRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            volumeRow.add(volumeLabel);
+            volumeRow.add(volumeSlider);
+            volumeRow.add(volumePercent);
+
             JPanel top = new JPanel();
             top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
             top.add(controlsRow);
             top.add(seekRow);
+            top.add(volumeRow);
 
             frame.setLayout(new BorderLayout());
             frame.add(top, BorderLayout.NORTH);
@@ -126,7 +157,10 @@ public class App {
         state.stopButton.setVisible(false);
         state.seekSlider.setVisible(false);
         state.timeLabel.setVisible(false);
+        state.volumeSlider.setVisible(true);
+        state.volumePercent.setVisible(true);
         state.seekSlider.setEnabled(false);
+        state.volumeSlider.setEnabled(true);
         state.isUpdatingSeek = true;
         state.seekSlider.setValue(0);
         state.isUpdatingSeek = false;
@@ -143,6 +177,9 @@ public class App {
             state.stopButton.setVisible(true);
             state.seekSlider.setVisible(true);
             state.timeLabel.setVisible(true);
+            state.volumeSlider.setVisible(true);
+            state.volumePercent.setVisible(true);
+            state.volumeSlider.setEnabled(true);
             updateTimeLabel(state.timeLabel, 0, state.durationSeconds);
             state.isPaused = false;
             state.pauseButton.setText(PAUSE_LABEL);
@@ -153,6 +190,9 @@ public class App {
             state.stopButton.setVisible(false);
             state.seekSlider.setVisible(false);
             state.timeLabel.setVisible(false);
+            state.volumeSlider.setVisible(true);
+            state.volumePercent.setVisible(true);
+            state.volumeSlider.setEnabled(true);
         }
     }
 

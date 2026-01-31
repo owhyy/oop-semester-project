@@ -182,4 +182,18 @@ int seek_seconds(double seconds) {
     return 0;
 }
 
+void set_volume(float volume) {
+    if (volume < 0.0f) {
+        volume = 0.0f;
+    }
+    if (volume > 1.0f) {
+        volume = 1.0f;
+    }
+    std::lock_guard<std::mutex> lock(g_audio_mutex);
+    if (!g_sound_init) {
+        return;
+    }
+    ma_sound_set_volume(&g_sound, volume);
+}
+
 }

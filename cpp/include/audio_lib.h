@@ -58,6 +58,11 @@ double get_position_seconds(void);
  */
 int seek_seconds(double seconds);
 
+/**
+ * Sets playback volume (0.0 - 1.0).
+ */
+void set_volume(float volume);
+
 #ifdef __cplusplus
 }
 #endif
