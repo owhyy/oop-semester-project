@@ -3,6 +3,7 @@ package app;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class App {
     private static final String NATIVE_LIB_ERROR = "Native lib not loaded – build cpp/ first";
@@ -30,6 +31,12 @@ public class App {
                     handlePlay(statusArea, baseStatus, selectedFile)
             );
 
+            AtomicBoolean isPaused = new AtomicBoolean(false);
+            JButton pauseButton = new JButton("Pause");
+            pauseButton.addActionListener(event ->
+                    handlePauseToggle(statusArea, baseStatus, isPaused, pauseButton)
+            );
+
             JButton stopButton = new JButton("Stop");
             stopButton.addActionListener(event ->
                     handleStop(statusArea, baseStatus)
@@ -38,6 +45,7 @@ public class App {
             JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
             top.add(uploadButton);
             top.add(playButton);
+            top.add(pauseButton);
             top.add(stopButton);
 
             frame.setLayout(new BorderLayout());
@@ -111,6 +119,37 @@ public class App {
         try {
             AudioLib.INSTANCE.stop_audio();
             statusArea.setText(baseStatus + "\nStopped.");
+        } catch (UnsatisfiedLinkError e) {
+            statusArea.setText(baseStatus + "\n" + NATIVE_LIB_ERROR);
+        }
+    }
+
+    private static void handlePauseToggle(
+            JTextArea statusArea,
+            String baseStatus,
+            AtomicBoolean isPaused,
+            JButton pauseButton
+    ) {
+        try {
+            if (!isPaused.get()) {
+                int code = AudioLib.INSTANCE.pause_audio();
+                if (code == 0) {
+                    isPaused.set(true);
+                    pauseButton.setText("Resume");
+                    statusArea.setText(baseStatus + "\nPaused.");
+                } else {
+                    statusArea.setText(baseStatus + "\nNothing to pause.");
+                }
+            } else {
+                int code = AudioLib.INSTANCE.resume_audio();
+                if (code == 0) {
+                    isPaused.set(false);
+                    pauseButton.setText("Pause");
+                    statusArea.setText(baseStatus + "\nResumed.");
+                } else {
+                    statusArea.setText(baseStatus + "\nNothing to resume.");
+                }
+            }
         } catch (UnsatisfiedLinkError e) {
             statusArea.setText(baseStatus + "\n" + NATIVE_LIB_ERROR);
         }

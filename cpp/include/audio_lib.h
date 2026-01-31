@@ -28,6 +28,18 @@ int play_audio(const char* path);
  */
 void stop_audio(void);
 
+/**
+ * Pauses current playback if any.
+ * Returns 0 on success, non-zero on failure.
+ */
+int pause_audio(void);
+
+/**
+ * Resumes paused playback if any.
+ * Returns 0 on success, non-zero on failure.
+ */
+int resume_audio(void);
+
 #ifdef __cplusplus
 }
 #endif

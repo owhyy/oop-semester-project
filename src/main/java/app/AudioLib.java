@@ -9,4 +9,6 @@ public interface AudioLib extends Library {
     int load_audio(String path);
     int play_audio(String path);
     void stop_audio();
+    int pause_audio();
+    int resume_audio();
 }

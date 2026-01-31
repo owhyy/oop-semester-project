@@ -7,6 +7,7 @@ namespace {
     bool g_engine_init = false;
     ma_sound g_sound;
     bool g_sound_init = false;
+    bool g_paused = false;
     std::mutex g_audio_mutex;
 
     int ensure_engine() {
@@ -26,6 +27,7 @@ namespace {
             ma_sound_stop(&g_sound);
             ma_sound_uninit(&g_sound);
             g_sound_init = false;
+            g_paused = false;
         }
     }
 }
@@ -67,6 +69,7 @@ int play_audio(const char* path) {
         return 2;
     }
     g_sound_init = true;
+    g_paused = false;
 
     result = ma_sound_start(&g_sound);
     if (result != MA_SUCCESS) {
@@ -79,6 +82,32 @@ int play_audio(const char* path) {
 void stop_audio(void) {
     std::lock_guard<std::mutex> lock(g_audio_mutex);
     stop_internal();
+}
+
+int pause_audio(void) {
+    std::lock_guard<std::mutex> lock(g_audio_mutex);
+    if (!g_sound_init) {
+        return 1;
+    }
+    ma_sound_stop(&g_sound);
+    g_paused = true;
+    return 0;
+}
+
+int resume_audio(void) {
+    std::lock_guard<std::mutex> lock(g_audio_mutex);
+    if (!g_sound_init) {
+        return 1;
+    }
+    if (!g_paused) {
+        return 0;
+    }
+    ma_result result = ma_sound_start(&g_sound);
+    if (result != MA_SUCCESS) {
+        return 2;
+    }
+    g_paused = false;
+    return 0;
 }
 
 }
