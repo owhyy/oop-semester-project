@@ -21,6 +21,7 @@ make
 ```
 
 This produces `libaudiolib.so` in `cpp/build/`.
+The C++ backend uses the single-header `miniaudio` library in `cpp/third_party/`.
 
 ### 2. Build the Java app
 

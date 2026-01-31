@@ -17,6 +17,17 @@ const char* audiolib_version(void);
  */
 int load_audio(const char* path);
 
+/**
+ * Plays the given audio file.
+ * Returns 0 on success, non-zero on failure.
+ */
+int play_audio(const char* path);
+
+/**
+ * Stops current playback if any.
+ */
+void stop_audio(void);
+
 #ifdef __cplusplus
 }
 #endif
