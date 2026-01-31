@@ -22,6 +22,13 @@ public class App {
             JButton uploadButton = new JButton("Upload Song");
             uploadButton.addActionListener(event -> {
                 JFileChooser chooser = new JFileChooser();
+                chooser.setAcceptAllFileFilterUsed(false);
+                chooser.addChoosableFileFilter(
+                        new javax.swing.filechooser.FileNameExtensionFilter(
+                                "Audio files (wav, mp3, m4a, flac, ogg)",
+                                "wav", "mp3", "m4a", "flac", "ogg"
+                        )
+                );
                 int result = chooser.showOpenDialog(frame);
                 if (result != JFileChooser.APPROVE_OPTION) {
                     return;
