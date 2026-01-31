@@ -11,4 +11,7 @@ public interface AudioLib extends Library {
     void stop_audio();
     int pause_audio();
     int resume_audio();
+    double get_duration_seconds(String path);
+    double get_position_seconds();
+    int seek_seconds(double seconds);
 }

@@ -11,6 +11,7 @@ public class App {
     private static final String PAUSE_LABEL = "Pause";
     private static final String RESUME_LABEL = "Resume";
     private static final String STOP_LABEL = "Stop";
+    private static final int SEEK_TIMER_MS = 400;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
@@ -31,7 +32,13 @@ public class App {
             JButton stopButton = new JButton(STOP_LABEL);
             stopButton.setVisible(false);
 
-            Player playerState = new Player(baseStatus, statusArea, playButton, pauseButton, stopButton);
+            JLabel timeLabel = new JLabel("0:00 / 0:00");
+            timeLabel.setVisible(false);
+            JSlider seekSlider = new JSlider(0, 0, 0);
+            seekSlider.setEnabled(false);
+            seekSlider.setVisible(false);
+
+            Player playerState = new Player(baseStatus, statusArea, playButton, pauseButton, stopButton, seekSlider, timeLabel);
             playButton.addActionListener(event ->
                     runNativeSafe(playerState, () -> handlePlay(playerState))
             );
@@ -46,11 +53,38 @@ public class App {
                     runNativeSafe(playerState, () -> handleUpload(frame, playerState))
             );
 
-            JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
-            top.add(uploadButton);
-            top.add(playButton);
-            top.add(pauseButton);
-            top.add(stopButton);
+            seekSlider.addChangeListener(event -> {
+                if (playerState.isUpdatingSeek || seekSlider.getValueIsAdjusting() || playerState.durationSeconds <= 0) {
+                    return;
+                }
+                double targetSeconds = seekSlider.getValue();
+                runNativeSafe(playerState, () -> {
+                    int code = AudioLib.INSTANCE.seek_seconds(targetSeconds);
+                    if (code == 0) {
+                        updateTimeLabel(timeLabel, targetSeconds, playerState.durationSeconds);
+                    }
+                });
+            });
+
+            Timer seekTimer = new Timer(SEEK_TIMER_MS, event ->
+                    runNativeSafe(playerState, () -> updateSeekBar(playerState, seekSlider, timeLabel))
+            );
+            seekTimer.start();
+
+            JPanel controlsRow = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            controlsRow.add(uploadButton);
+            controlsRow.add(playButton);
+            controlsRow.add(pauseButton);
+            controlsRow.add(stopButton);
+
+            JPanel seekRow = new JPanel(new BorderLayout());
+            seekRow.add(seekSlider, BorderLayout.CENTER);
+            seekRow.add(timeLabel, BorderLayout.EAST);
+
+            JPanel top = new JPanel();
+            top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
+            top.add(controlsRow);
+            top.add(seekRow);
 
             frame.setLayout(new BorderLayout());
             frame.add(top, BorderLayout.NORTH);
@@ -87,10 +121,13 @@ public class App {
         String path = selected.getAbsolutePath();
         int code = AudioLib.INSTANCE.load_audio(path);
         if (code == 0) {
+            state.durationSeconds = AudioLib.INSTANCE.get_duration_seconds(path);
             state.statusArea.setText(state.baseStatus + "\nLoaded: " + selected.getName());
             state.playButton.setVisible(true);
             state.pauseButton.setVisible(true);
             state.stopButton.setVisible(true);
+            state.seekSlider.setVisible(true);
+            state.timeLabel.setVisible(true);
             state.isPaused = false;
             state.pauseButton.setText(PAUSE_LABEL);
         } else {
@@ -98,6 +135,8 @@ public class App {
             state.playButton.setVisible(false);
             state.pauseButton.setVisible(false);
             state.stopButton.setVisible(false);
+            state.seekSlider.setVisible(false);
+            state.timeLabel.setVisible(false);
         }
     }
 
@@ -117,6 +156,12 @@ public class App {
     private static void handleStop(Player state) {
         AudioLib.INSTANCE.stop_audio();
         state.statusArea.setText(state.baseStatus + "\nStopped.");
+        if (state.seekSlider.isVisible()) {
+            state.isUpdatingSeek = true;
+            state.seekSlider.setValue(0);
+            state.isUpdatingSeek = false;
+            updateTimeLabel(state.timeLabel, 0, state.durationSeconds);
+        }
     }
 
     private static void handlePauseToggle(Player state) {
@@ -147,5 +192,40 @@ public class App {
         } catch (UnsatisfiedLinkError e) {
             state.statusArea.setText(state.baseStatus + "\n" + NATIVE_LIB_ERROR);
         }
+    }
+
+    private static void updateSeekBar(Player state, JSlider slider, JLabel timeLabel) {
+        if (state.durationSeconds <= 0 || state.selectedFile == null) {
+            return;
+        }
+        double position = AudioLib.INSTANCE.get_position_seconds();
+        if (position < 0) {
+            return;
+        }
+        int durationInt = (int) Math.round(state.durationSeconds);
+        if (slider.getMaximum() != durationInt) {
+            slider.setMaximum(durationInt);
+        }
+        if (!slider.getValueIsAdjusting()) {
+            state.isUpdatingSeek = true;
+            slider.setValue((int) Math.round(position));
+            state.isUpdatingSeek = false;
+        }
+        updateTimeLabel(timeLabel, position, state.durationSeconds);
+        slider.setEnabled(true);
+    }
+
+    private static void updateTimeLabel(JLabel timeLabel, double position, double duration) {
+        timeLabel.setText(formatTime(position) + " / " + formatTime(duration));
+    }
+
+    private static String formatTime(double seconds) {
+        if (seconds < 0 || Double.isNaN(seconds) || Double.isInfinite(seconds)) {
+            return "0:00";
+        }
+        long totalSeconds = (long) Math.floor(seconds);
+        long minutes = totalSeconds / 60;
+        long secs = totalSeconds % 60;
+        return String.format("%d:%02d", minutes, secs);
     }
 }

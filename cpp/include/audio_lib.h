@@ -40,6 +40,24 @@ int pause_audio(void);
  */
 int resume_audio(void);
 
+/**
+ * Returns the duration of the audio file in seconds.
+ * Returns -1 on failure.
+ */
+double get_duration_seconds(const char* path);
+
+/**
+ * Returns the current playback position in seconds.
+ * Returns -1 on failure or if nothing is playing.
+ */
+double get_position_seconds(void);
+
+/**
+ * Seeks to the given position in seconds.
+ * Returns 0 on success, non-zero on failure.
+ */
+int seek_seconds(double seconds);
+
 #ifdef __cplusplus
 }
 #endif
